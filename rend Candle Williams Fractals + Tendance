@@ -1,0 +1,115 @@
+//@version=6
+indicator("Trend Candle Williams Fractals + Tendance", shorttitle="Trend Fractals", format=format.price, precision=0, overlay=true)
+n = input.int(title="Periods", defval=2, minval=2)
+useWicksHigh = input.bool(false, title="On Wicks High")
+useWicksLow = input.bool(false, title="On Wicks Low")
+
+var float lastHigh = na
+var float lastLow  = na
+
+// Tableaux pour les 6 derniers fractales
+var string[] lastFractals = array.new_string(0)
+
+// --- Détection fractales Up ---
+bool upflagDownFrontier = true
+bool upflagUpFrontier0 = true
+bool upflagUpFrontier1 = true
+bool upflagUpFrontier2 = true
+bool upflagUpFrontier3 = true
+bool upflagUpFrontier4 = true
+
+conditionCandleWicksHigh = (useWicksHigh ? high : close)
+for i = 1 to n
+    upflagDownFrontier := upflagDownFrontier and (conditionCandleWicksHigh[n-i] < conditionCandleWicksHigh[n])
+    upflagUpFrontier0 := upflagUpFrontier0 and (conditionCandleWicksHigh[n+i] < conditionCandleWicksHigh[n])
+    upflagUpFrontier1 := upflagUpFrontier1 and (conditionCandleWicksHigh[n+1] <= conditionCandleWicksHigh[n] and conditionCandleWicksHigh[n+i + 1] < conditionCandleWicksHigh[n])
+    upflagUpFrontier2 := upflagUpFrontier2 and (conditionCandleWicksHigh[n+1] <= conditionCandleWicksHigh[n] and conditionCandleWicksHigh[n+2] <= conditionCandleWicksHigh[n] and conditionCandleWicksHigh[n+i + 2] < conditionCandleWicksHigh[n])
+    upflagUpFrontier3 := upflagUpFrontier3 and (conditionCandleWicksHigh[n+1] <= conditionCandleWicksHigh[n] and conditionCandleWicksHigh[n+2] <= conditionCandleWicksHigh[n] and conditionCandleWicksHigh[n+3] <= conditionCandleWicksHigh[n] and conditionCandleWicksHigh[n+i + 3] < conditionCandleWicksHigh[n])
+    upflagUpFrontier4 := upflagUpFrontier4 and (conditionCandleWicksHigh[n+1] <= conditionCandleWicksHigh[n] and conditionCandleWicksHigh[n+2] <= conditionCandleWicksHigh[n] and conditionCandleWicksHigh[n+3] <= conditionCandleWicksHigh[n] and conditionCandleWicksHigh[n+4] <= conditionCandleWicksHigh[n] and conditionCandleWicksHigh[n+i + 4] < conditionCandleWicksHigh[n])
+flagUpFrontier = upflagUpFrontier0 or upflagUpFrontier1 or upflagUpFrontier2 or upflagUpFrontier3 or upflagUpFrontier4
+upFractal = (upflagDownFrontier and flagUpFrontier)
+
+// --- Détection fractales Down ---
+bool downflagDownFrontier = true
+bool downflagUpFrontier0 = true
+bool downflagUpFrontier1 = true
+bool downflagUpFrontier2 = true
+bool downflagUpFrontier3 = true
+bool downflagUpFrontier4 = true
+
+conditionCandleWicksLow = (useWicksLow ? low : close)
+for i = 1 to n
+    downflagDownFrontier := downflagDownFrontier and (conditionCandleWicksLow[n-i] > conditionCandleWicksLow[n])
+    downflagUpFrontier0 := downflagUpFrontier0 and (conditionCandleWicksLow[n+i] > conditionCandleWicksLow[n])
+    downflagUpFrontier1 := downflagUpFrontier1 and (conditionCandleWicksLow[n+1] >= conditionCandleWicksLow[n] and conditionCandleWicksLow[n+i + 1] > conditionCandleWicksLow[n])
+    downflagUpFrontier2 := downflagUpFrontier2 and (conditionCandleWicksLow[n+1] >= conditionCandleWicksLow[n] and conditionCandleWicksLow[n+2] >= conditionCandleWicksLow[n] and conditionCandleWicksLow[n+i + 2] > conditionCandleWicksLow[n])
+    downflagUpFrontier3 := downflagUpFrontier3 and (conditionCandleWicksLow[n+1] >= conditionCandleWicksLow[n] and conditionCandleWicksLow[n+2] >= conditionCandleWicksLow[n] and conditionCandleWicksLow[n+3] >= conditionCandleWicksLow[n] and conditionCandleWicksLow[n+i + 3] > conditionCandleWicksLow[n])
+    downflagUpFrontier4 := downflagUpFrontier4 and (conditionCandleWicksLow[n+1] >= conditionCandleWicksLow[n] and conditionCandleWicksLow[n+2] >= conditionCandleWicksLow[n] and conditionCandleWicksLow[n+3] >= conditionCandleWicksLow[n] and conditionCandleWicksLow[n+4] >= conditionCandleWicksLow[n] and conditionCandleWicksLow[n+i + 4] > conditionCandleWicksLow[n])
+flagDownFrontier = downflagUpFrontier0 or downflagUpFrontier1 or downflagUpFrontier2 or downflagUpFrontier3 or downflagUpFrontier4
+downFractal = (downflagDownFrontier and flagDownFrontier)
+
+float yPosHigh = close[n] + (high[n] - low[n]) * 0.3
+float yPosLow = close[n] - (high[n] - low[n]) * 0.3
+
+string fractalType = na
+
+if upFractal
+    fractalType := na(lastHigh) ? "H" : close[n] > lastHigh ? "HH" : "LH"
+    lastHigh := close[n]
+    
+if downFractal
+    fractalType := na(lastLow) ? "L" : close[n] < lastLow ? "LL" : "HL"
+    lastLow := close[n]
+
+// --- Stocker les derniers fractales ---
+if not na(fractalType)
+    array.push(lastFractals, fractalType)
+    if array.size(lastFractals) > 6
+        array.shift(lastFractals)  // garder seulement les 6 derniers
+
+// --- Déterminer la tendance ---
+trend = "Indécis"
+if array.size(lastFractals) == 6
+    allBull = true
+    allBear = true
+    for i = 0 to 5
+        f = array.get(lastFractals, i)
+        if f != "HH" and f != "HL"
+            allBull := false
+        if f != "LL" and f != "LH"
+            allBear := false
+    if allBull
+        trend := "Haussière"
+    else if allBear
+        trend := "Baissière"
+    else
+        trend := "Accumulation"
+
+// --- Affichage ---
+// if not na(fractalType)
+//     label.new(
+//         bar_index - n,
+//         fractalType == "HH" or fractalType == "LH" ? yPosHigh : yPosLow,
+//         text=fractalType + "\n" + trend,
+//         style=fractalType == "HH" or fractalType == "LH" ? label.style_label_down : label.style_label_up,
+//         color= fractalType == "HH" or fractalType == "LH" ? color.new(color.green,0) : color.new(color.red,0),
+//         textcolor=color.white,
+//         size=size.small
+//     )
+
+
+if not na(fractalType)
+    // Choisir la couleur selon la tendance
+    labelColor = trend == "Haussière" ? color.new(color.green, 0) :
+                 trend == "Baissière" ? color.new(color.red, 0) :
+                 color.new(color.orange, 0)
+
+    label.new(
+        bar_index - n,
+        fractalType == "HH" or fractalType == "LH" ? yPosHigh : yPosLow,
+        text=fractalType + "\n" + trend,
+        style=fractalType == "HH" or fractalType == "LH" ? label.style_label_down : label.style_label_up,
+        color=labelColor,
+        textcolor=color.white,
+        size=size.small
+    )
